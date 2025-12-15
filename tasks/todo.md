@@ -28,3 +28,17 @@
 ## Review
 - Created project folder structure and placeholder files for public assets, React app shell, library stubs, and `/api/quote` stub.
 - Summarized PRD requirements, captured open questions, and noted next implementation steps.
+
+## Next tasks
+- [x] Install core dependencies (React, Vite, types, barcode lib, cheerio/fetch).
+- [x] Add simple navigation toggle between Scan and List views.
+- [x] Implement Scan flow: manual ISBN input, call `/api/quote`, show result card, add-to-list using storage.
+- [x] Implement List view: render stored quotes with filters/sorting and totals.
+- [ ] Add PWA polish: service worker, icons, ensure manifest wired.
+
+## Review (updates)
+- Added a minimal in-app navigation toggle (no router) in `src/App.tsx`.
+- Implemented the manual ISBN lookup + save flow in `src/pages/ScanPage.tsx` (scanner still placeholder).
+- Implemented list rendering with filter/sort + totals in `src/pages/ListPage.tsx`.
+- Added minimal `index.html`, `tsconfig.json`, and `src/vite-env.d.ts` so the Vite app can run cleanly.
+- Added a dev-only mock `/api/quote` handler in `vite.config.ts` so lookups work during local development.

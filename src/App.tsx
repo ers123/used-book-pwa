@@ -3,17 +3,29 @@ import ScanPage from './pages/ScanPage';
 import ListPage from './pages/ListPage';
 
 const App: React.FC = () => {
-  // TODO: Replace with simple routing once we pick a router (or manual tab state)
+  const [view, setView] = React.useState<'scan' | 'list'>('scan');
+
   return (
     <main style={{ padding: '1rem', fontFamily: 'sans-serif' }}>
       <h1>Used Book Buyback Checker</h1>
-      <p>Placeholder shell; wire navigation and state in MVP.</p>
-      <section>
-        <ScanPage />
-      </section>
-      <section style={{ marginTop: '2rem' }}>
-        <ListPage />
-      </section>
+      <nav style={{ display: 'flex', gap: '0.5rem', margin: '1rem 0' }}>
+        <button
+          type="button"
+          onClick={() => setView('scan')}
+          aria-current={view === 'scan' ? 'page' : undefined}
+        >
+          Scan
+        </button>
+        <button
+          type="button"
+          onClick={() => setView('list')}
+          aria-current={view === 'list' ? 'page' : undefined}
+        >
+          My Book List
+        </button>
+      </nav>
+
+      {view === 'scan' ? <ScanPage /> : <ListPage />}
     </main>
   );
 };
