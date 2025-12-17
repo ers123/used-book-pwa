@@ -34,7 +34,7 @@
 - [x] Add simple navigation toggle between Scan and List views.
 - [x] Implement Scan flow: manual ISBN input, call `/api/quote`, show result card, add-to-list using storage.
 - [x] Implement List view: render stored quotes with filters/sorting and totals.
-- [ ] Add PWA polish: service worker, icons, ensure manifest wired.
+- [x] Add PWA polish: service worker, icons, ensure manifest wired.
 - [ ] Implement real barcode scanning with `zxing-js` (replace placeholder).
 - [ ] Implement `/api/quote` scraping + caching (Aladin + YES24) and align response types.
 
@@ -61,3 +61,18 @@
 - Added a dev-only mock `/api/quote` handler in `vite.config.ts` so lookups work during local development.
 - Switched to a one-page layout with a neobrutalist theme and improved copy.
 - Fixed “Saved list doesn’t refresh after saving” by dispatching a `book-quotes-updated` event from `saveQuote()`.
+- Wired install/share assets: icons in manifest, `apple-touch-icon`, and social preview image meta tags.
+- Added a minimal production-only service worker (`public/sw.js`) and registration in `src/main.tsx`.
+
+## Notes
+- For best social previews, `og:image` should be an absolute URL. Once you have the final deployed domain, we should update `index.html` accordingly.
+
+## Recommended next step
+- Implement real barcode scanning (`zxing-js`) end-to-end on iPhone Safari, then iterate on `/api/quote` scraping.
+
+### Barcode scanning plan (next)
+- [ ] Update `BarcodeScanner` to use `getUserMedia` (rear camera) + `zxing` decode loop.
+- [ ] Add Start/Stop controls and ensure camera stream is always stopped on unmount.
+- [ ] On successful scan, call `onDetected(isbn)` once (dedupe repeat reads for ~2s).
+- [ ] Show clear UI states: idle / requesting permission / scanning / permission denied.
+- [ ] Verify on iPhone: if camera blocked on LAN HTTP, switch to HTTPS dev setup (document exact steps).
