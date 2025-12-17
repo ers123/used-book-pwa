@@ -16,4 +16,5 @@ export function saveQuote(quote: BookQuote): void {
   const withoutOld = existing.filter((item) => item.isbn !== quote.isbn);
   const next = [{ ...quote, timestamp: new Date().toISOString() }, ...withoutOld];
   localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
+  window.dispatchEvent(new Event('book-quotes-updated'));
 }

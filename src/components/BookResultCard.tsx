@@ -5,19 +5,37 @@ interface Props {
   quote?: BookQuote;
 }
 
+function formatWon(value: number) {
+  return `₩${value.toLocaleString()}`;
+}
+
 const BookResultCard: React.FC<Props> = ({ quote }) => {
   if (!quote) {
-    return <p>No result yet.</p>;
+    return <p className="muted" style={{ marginTop: 12 }}>No result yet.</p>;
   }
 
+  const recommendationLabel =
+    quote.recommendation === 'aladin'
+      ? 'Aladin'
+      : quote.recommendation === 'yes24'
+        ? 'YES24'
+        : 'None';
+
   return (
-    <article style={{ border: '1px solid #e5e7eb', padding: '1rem' }}>
-      <h3>{quote.title} ({quote.isbn})</h3>
-      <ul>
-        <li>Aladin: {quote.aladin.is_buyable ? `${quote.aladin.price}₩` : 'Not buyable'}</li>
-        <li>YES24: {quote.yes24.is_buyable ? `${quote.yes24.price}₩` : 'Not buyable'}</li>
-      </ul>
-      <p>Recommendation: {quote.recommendation}</p>
+    <article className="resultCard">
+      <div className="row" style={{ justifyContent: 'space-between', alignItems: 'baseline', flexWrap: 'wrap' }}>
+        <h3 className="resultTitle">
+          {quote.title} <span className="muted">({quote.isbn})</span>
+        </h3>
+        <span className="pill pillAccent">Rec: {recommendationLabel}</span>
+      </div>
+
+      <dl className="kv">
+        <dt>Aladin</dt>
+        <dd>{quote.aladin.is_buyable ? formatWon(quote.aladin.price) : 'Not buyable'}</dd>
+        <dt>YES24</dt>
+        <dd>{quote.yes24.is_buyable ? formatWon(quote.yes24.price) : 'Not buyable'}</dd>
+      </dl>
     </article>
   );
 };

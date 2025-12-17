@@ -7,9 +7,9 @@ interface Props {
 const BarcodeScanner: React.FC<Props> = ({ onDetected }) => {
   // TODO: integrate zxing/Quagga. This is a placeholder to keep wiring simple.
   return (
-    <div>
-      <p>Barcode scanner placeholder.</p>
-      <button type="button" onClick={() => onDetected?.('9781234567890')}>
+    <div className="row" style={{ justifyContent: 'space-between', flexWrap: 'wrap' }}>
+      <span className="pill">Scanner: placeholder</span>
+      <button className="button" type="button" onClick={() => onDetected?.('9781234567890')}>
         Simulate scan
       </button>
     </div>

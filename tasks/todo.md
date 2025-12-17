@@ -35,6 +35,23 @@
 - [x] Implement Scan flow: manual ISBN input, call `/api/quote`, show result card, add-to-list using storage.
 - [x] Implement List view: render stored quotes with filters/sorting and totals.
 - [ ] Add PWA polish: service worker, icons, ensure manifest wired.
+- [ ] Implement real barcode scanning with `zxing-js` (replace placeholder).
+- [ ] Implement `/api/quote` scraping + caching (Aladin + YES24) and align response types.
+
+## Design / UX improvements (proposal)
+- [ ] Add neobrutalist theme via a single global CSS file (colors, borders, type, spacing).
+- [ ] Make it one page: scan/input + result + saved list (no routing).
+- [ ] Replace inline styles with CSS classes for consistency and easier tweaking.
+- [ ] Make list + result UI “finished”: consistent card/table styling, spacing, and empty/error states.
+- [ ] Make `dev-mock-api` plugin run only in dev (so production builds aren’t affected).
+
+## Plan (confirm before I implement)
+- [x] Restrict the `dev-mock-api` middleware to dev only (`vite dev`) and leave production builds clean.
+- [x] Add a single global neobrutalist stylesheet (`src/styles.css`) and import it in `src/main.tsx`.
+- [x] Refactor `src/App.tsx` into a one-page layout: header (utilitarian copy) + scan/input section + result card + saved list section.
+- [x] Replace remaining inline styles across pages/components with CSS classes (keep markup minimal).
+- [x] Tighten copy for fast “shelf-clearing mode” scanning and clarity of recommendation.
+- [x] Quick sanity check: run `npm run dev` and verify basic flows still work.
 
 ## Review (updates)
 - Added a minimal in-app navigation toggle (no router) in `src/App.tsx`.
@@ -42,3 +59,5 @@
 - Implemented list rendering with filter/sort + totals in `src/pages/ListPage.tsx`.
 - Added minimal `index.html`, `tsconfig.json`, and `src/vite-env.d.ts` so the Vite app can run cleanly.
 - Added a dev-only mock `/api/quote` handler in `vite.config.ts` so lookups work during local development.
+- Switched to a one-page layout with a neobrutalist theme and improved copy.
+- Fixed “Saved list doesn’t refresh after saving” by dispatching a `book-quotes-updated` event from `saveQuote()`.

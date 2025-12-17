@@ -13,6 +13,9 @@ const ListPage: React.FC = () => {
 
   React.useEffect(() => {
     refresh();
+    const onUpdated = () => refresh();
+    window.addEventListener('book-quotes-updated', onUpdated);
+    return () => window.removeEventListener('book-quotes-updated', onUpdated);
   }, []);
 
   const filtered = quotes.filter((q) => (filter === 'all' ? true : q.recommendation === filter));
@@ -41,14 +44,13 @@ const ListPage: React.FC = () => {
 
   return (
     <section>
-      <h2>My Book List</h2>
-      <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', margin: '0.5rem 0 1rem' }}>
-        <button type="button" onClick={refresh}>
+      <div className="row" style={{ flexWrap: 'wrap' }}>
+        <button className="button buttonGhost" type="button" onClick={refresh}>
           Refresh
         </button>
 
         <label>
-          Filter:{' '}
+          <span className="muted">Filter:</span>{' '}
           <select value={filter} onChange={(e) => setFilter(e.target.value as Provider | 'all')}>
             <option value="all">All</option>
             <option value="aladin">Aladin</option>
@@ -58,7 +60,7 @@ const ListPage: React.FC = () => {
         </label>
 
         <label>
-          Sort:{' '}
+          <span className="muted">Sort:</span>{' '}
           <select value={sort} onChange={(e) => setSort(e.target.value as typeof sort)}>
             <option value="timestamp_desc">Newest</option>
             <option value="price_desc">Price (desc)</option>
@@ -66,7 +68,7 @@ const ListPage: React.FC = () => {
         </label>
       </div>
 
-      <ul>
+      <ul style={{ margin: '12px 0 0', paddingLeft: 18 }}>
         <li>Total: {quotes.length}</li>
         <li>Aladin recommended: {counts.aladin} (₩{totals.aladin})</li>
         <li>YES24 recommended: {counts.yes24} (₩{totals.yes24})</li>
@@ -74,23 +76,25 @@ const ListPage: React.FC = () => {
       </ul>
 
       {sorted.length === 0 ? (
-        <p style={{ marginTop: '1rem' }}>No saved books yet.</p>
+        <p className="muted" style={{ marginTop: 12 }}>
+          No saved books yet. Scan/lookup above, then hit “Add to List”.
+        </p>
       ) : (
-        <div style={{ overflowX: 'auto', marginTop: '1rem' }}>
-          <table cellPadding={8} style={{ borderCollapse: 'collapse', width: '100%' }}>
+        <div className="tableWrap">
+          <table>
             <thead>
               <tr>
-                <th align="left">ISBN</th>
-                <th align="left">Title</th>
-                <th align="left">Aladin</th>
-                <th align="left">YES24</th>
-                <th align="left">Rec</th>
-                <th align="left">Saved</th>
+                <th>ISBN</th>
+                <th>Title</th>
+                <th>Aladin</th>
+                <th>YES24</th>
+                <th>Rec</th>
+                <th>Saved</th>
               </tr>
             </thead>
             <tbody>
               {sorted.map((q) => (
-                <tr key={q.isbn} style={{ borderTop: '1px solid #e5e7eb' }}>
+                <tr key={q.isbn}>
                   <td>{q.isbn}</td>
                   <td>{q.title}</td>
                   <td>{q.aladin.is_buyable ? `₩${q.aladin.price}` : '-'}</td>

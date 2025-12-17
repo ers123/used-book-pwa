@@ -33,7 +33,7 @@ const ScanPage: React.FC = () => {
     event.preventDefault();
     const candidate = normalizedIsbn;
     if (candidate.length !== 10 && candidate.length !== 13) {
-      setError('Enter a 10- or 13-digit ISBN');
+      setError('Enter ISBN-10 or ISBN-13 (numbers only).');
       return;
     }
     void lookup(candidate);
@@ -41,7 +41,6 @@ const ScanPage: React.FC = () => {
 
   return (
     <section>
-      <h2>Scan or Enter ISBN</h2>
       <BarcodeScanner
         onDetected={(isbn) => {
           setIsbnInput(isbn);
@@ -49,26 +48,35 @@ const ScanPage: React.FC = () => {
         }}
       />
 
-      <form onSubmit={onSubmit} style={{ display: 'flex', gap: '0.5rem', margin: '1rem 0' }}>
+      <form onSubmit={onSubmit} className="row" style={{ marginTop: 12 }}>
         <input
           value={isbnInput}
           onChange={(e) => setIsbnInput(e.target.value)}
           inputMode="numeric"
-          placeholder="Enter ISBN-10 or ISBN-13"
+          placeholder="ISBN (10 or 13 digits)"
           aria-label="ISBN"
-          style={{ flex: 1 }}
+          className="field"
         />
-        <button type="submit" disabled={loading}>
+        <button className="button buttonPrimary" type="submit" disabled={loading}>
           {loading ? 'Looking up…' : 'Lookup'}
         </button>
       </form>
 
-      {error ? <p style={{ color: '#b91c1c' }}>{error}</p> : null}
+      <p className="muted" style={{ margin: '10px 0 0' }}>
+        Tip: shelf-clearing mode is “scan → save → next”.
+      </p>
+
+      {error ? (
+        <p className="error" style={{ margin: '10px 0 0' }}>
+          {error}
+        </p>
+      ) : null}
 
       <BookResultCard quote={quote} />
 
-      <div style={{ marginTop: '1rem' }}>
+      <div className="row" style={{ marginTop: 12 }}>
         <button
+          className="button buttonGhost"
           type="button"
           disabled={!quote || loading}
           onClick={() => {
@@ -79,7 +87,7 @@ const ScanPage: React.FC = () => {
         >
           Add to List
         </button>
-        {saved ? <span style={{ marginLeft: '0.5rem' }}>Saved.</span> : null}
+        {saved ? <span className="pill">Saved</span> : null}
       </div>
     </section>
   );
