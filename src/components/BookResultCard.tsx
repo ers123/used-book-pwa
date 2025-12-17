@@ -9,6 +9,23 @@ function formatWon(value: number) {
   return `₩${value.toLocaleString()}`;
 }
 
+function ProviderLine({ label, isBuyable, price, error }: { label: string; isBuyable: boolean; price: number; error?: string }) {
+  const value = isBuyable ? formatWon(price) : 'Not buyable';
+  return (
+    <>
+      <dt>{label}</dt>
+      <dd>
+        {value}
+        {!isBuyable && error && error !== 'Not buyable' ? (
+          <span className="muted" style={{ display: 'block', fontWeight: 600 }}>
+            ({error})
+          </span>
+        ) : null}
+      </dd>
+    </>
+  );
+}
+
 const BookResultCard: React.FC<Props> = ({ quote }) => {
   if (!quote) {
     return <p className="muted" style={{ marginTop: 12 }}>No result yet.</p>;
@@ -31,10 +48,18 @@ const BookResultCard: React.FC<Props> = ({ quote }) => {
       </div>
 
       <dl className="kv">
-        <dt>Aladin</dt>
-        <dd>{quote.aladin.is_buyable ? formatWon(quote.aladin.price) : 'Not buyable'}</dd>
-        <dt>YES24</dt>
-        <dd>{quote.yes24.is_buyable ? formatWon(quote.yes24.price) : 'Not buyable'}</dd>
+        <ProviderLine
+          label="Aladin"
+          isBuyable={quote.aladin.is_buyable}
+          price={quote.aladin.price}
+          error={quote.aladin.error}
+        />
+        <ProviderLine
+          label="YES24"
+          isBuyable={quote.yes24.is_buyable}
+          price={quote.yes24.price}
+          error={quote.yes24.error}
+        />
       </dl>
     </article>
   );

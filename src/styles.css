@@ -201,6 +201,10 @@ a {
   font-weight: 700;
 }
 
+.kv dd .muted {
+  font-weight: 600;
+}
+
 .tableWrap {
   margin-top: 12px;
   overflow-x: auto;
@@ -235,4 +239,3 @@ th {
 tr:last-child td {
   border-bottom: none;
 }
-

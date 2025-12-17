@@ -35,8 +35,8 @@
 - [x] Implement Scan flow: manual ISBN input, call `/api/quote`, show result card, add-to-list using storage.
 - [x] Implement List view: render stored quotes with filters/sorting and totals.
 - [x] Add PWA polish: service worker, icons, ensure manifest wired.
-- [ ] Implement real barcode scanning with `zxing-js` (replace placeholder).
-- [ ] Implement `/api/quote` scraping + caching (Aladin + YES24) and align response types.
+- [x] Implement real barcode scanning with `zxing-js` (replace placeholder).
+- [x] Implement `/api/quote` scraping + caching (Aladin + YES24) and align response types.
 
 ## Design / UX improvements (proposal)
 - [ ] Add neobrutalist theme via a single global CSS file (colors, borders, type, spacing).
@@ -63,6 +63,9 @@
 - Fixed “Saved list doesn’t refresh after saving” by dispatching a `book-quotes-updated` event from `saveQuote()`.
 - Wired install/share assets: icons in manifest, `apple-touch-icon`, and social preview image meta tags.
 - Added a minimal production-only service worker (`public/sw.js`) and registration in `src/main.tsx`.
+- Implemented real camera barcode scanning via ZXing in `src/components/BarcodeScanner.tsx` (requires HTTPS).
+- Implemented a best-effort scraped `/api/quote` in `api/quote.ts` with ISBN normalization, TTL cache, and rate limiting.
+- Improved API error propagation (`src/lib/api.ts`) and surfaced provider parse errors in `src/components/BookResultCard.tsx`.
 
 ## Notes
 - For best social previews, `og:image` should be an absolute URL. Once you have the final deployed domain, we should update `index.html` accordingly.
@@ -71,8 +74,29 @@
 - Implement real barcode scanning (`zxing-js`) end-to-end on iPhone Safari, then iterate on `/api/quote` scraping.
 
 ### Barcode scanning plan (next)
-- [ ] Update `BarcodeScanner` to use `getUserMedia` (rear camera) + `zxing` decode loop.
-- [ ] Add Start/Stop controls and ensure camera stream is always stopped on unmount.
-- [ ] On successful scan, call `onDetected(isbn)` once (dedupe repeat reads for ~2s).
-- [ ] Show clear UI states: idle / requesting permission / scanning / permission denied.
-- [ ] Verify on iPhone: if camera blocked on LAN HTTP, switch to HTTPS dev setup (document exact steps).
+- [x] Update `BarcodeScanner` to use `getUserMedia` (rear camera) + `zxing` decode loop.
+- [x] Add Start/Stop controls and ensure camera stream is always stopped on unmount.
+- [x] On successful scan, call `onDetected(isbn)` once (dedupe repeat reads for ~2s).
+- [x] Show clear UI states: idle / requesting permission / scanning / permission denied.
+- [x] Verify on iPhone: if camera blocked on LAN HTTP, switch to HTTPS dev setup (document exact steps).
+
+### Real pricing plan (next)
+- [x] Replace `api/quote.ts` mock with a Vercel Serverless Function (Node runtime) that returns the `BookQuote` shape.
+- [x] Implement ISBN normalize/validate (accept ISBN-10/13, normalize to ISBN-13).
+- [x] Add caching + gentle rate limiting:
+  - In-memory TTL cache per ISBN (best-effort).
+  - `Cache-Control` with `s-maxage` to leverage Vercel edge caching.
+- [x] YES24 scraping (no official API):
+  - Try multiple mobile buyback search URLs (best-effort) and parse buyback-related “...원” amounts from HTML.
+  - If blocked/JS-only/structure changes, return partial data with a clear error string.
+- [x] Aladin scraping (no official API):
+  - Query `https://used.aladin.co.kr/shop/usedshop/wc2b_search.aspx` with ISBN (best-effort).
+  - Parse title + the best available “매입가” (or mark not buyable).
+  - If blocked/503/403, return partial data with a clear error string.
+- [x] Remove `node-fetch` dependency (use native `fetch` on Vercel Node 18+), to avoid deprecation warnings.
+- [ ] End-to-end test on `https://used-book-pwa.vercel.app`:
+  - Scan ISBN on iPhone → lookup → shows real YES24/Aladin results (or clear error).
+
+## Notes / constraints
+- Since there’s no official buyback API, this is HTML scraping and can break if the sites change or add bot protection.
+- We’ll keep it “best-effort”: return partial results + errors without breaking the app.

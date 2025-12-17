@@ -1,5 +1,6 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
+import path from 'node:path';
 
 function devMockApiPlugin() {
   return {
@@ -19,7 +20,7 @@ function devMockApiPlugin() {
             isbn
               ? {
                   isbn,
-                  title: 'Sample Title',
+                  title: 'Sample Title (dev mock)',
                   aladin: { is_buyable: false, price: 0 },
                   yes24: { is_buyable: false, price: 0 },
                   recommendation: 'none',
@@ -33,5 +34,11 @@ function devMockApiPlugin() {
 }
 
 export default defineConfig(({ command }) => ({
+  resolve: {
+    // @zxing/library was installed from GitHub source (no built /esm entry). Alias to TS source for Vite bundling.
+    alias: {
+      '@zxing/library': path.resolve(__dirname, 'node_modules/@zxing/library/src/index.ts'),
+    },
+  },
   plugins: [react(), ...(command === 'serve' ? [devMockApiPlugin()] : [])],
 }));
