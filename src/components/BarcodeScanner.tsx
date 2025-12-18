@@ -8,19 +8,29 @@ interface Props {
 const BarcodeScanner: React.FC<Props> = ({ onDetected }) => {
   const videoRef = React.useRef<HTMLVideoElement | null>(null);
   const readerRef = React.useRef<BrowserMultiFormatReader | null>(null);
-  const controlsRef = React.useRef<{ stop: () => void } | null>(null);
+  const streamRef = React.useRef<MediaStream | null>(null);
+  const pollRef = React.useRef<number | null>(null);
   const lastHitRef = React.useRef<{ value: string; at: number } | null>(null);
 
   const [status, setStatus] = React.useState<'idle' | 'starting' | 'scanning' | 'denied' | 'error'>('idle');
   const [message, setMessage] = React.useState<string | null>(null);
 
-  function stop() {
-    try {
-      controlsRef.current?.stop();
-    } catch {
-      // ignore
+  function stop(nextStatus: 'idle' | 'error' | 'denied' = 'idle') {
+    if (pollRef.current) {
+      window.clearInterval(pollRef.current);
+      pollRef.current = null;
     }
-    controlsRef.current = null;
+
+    if (streamRef.current) {
+      for (const track of streamRef.current.getTracks()) {
+        try {
+          track.stop();
+        } catch {
+          // ignore
+        }
+      }
+      streamRef.current = null;
+    }
 
     try {
       readerRef.current?.reset();
@@ -29,7 +39,7 @@ const BarcodeScanner: React.FC<Props> = ({ onDetected }) => {
     }
     readerRef.current = null;
 
-    setStatus('idle');
+    setStatus(nextStatus);
   }
 
   React.useEffect(() => {
@@ -55,12 +65,25 @@ const BarcodeScanner: React.FC<Props> = ({ onDetected }) => {
     readerRef.current = reader;
 
     try {
-      const devices = await BrowserMultiFormatReader.listVideoInputDevices();
-      const preferred =
-        devices.find((d) => /back|rear|environment/i.test(d.label)) ?? devices[devices.length - 1];
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: { ideal: 'environment' } },
+        audio: false,
+      });
+      streamRef.current = stream;
 
-      const controls = await reader.decodeFromVideoDevice(preferred?.deviceId, videoRef.current, (result, error) => {
-        if (result) {
+      videoRef.current.srcObject = stream;
+      // iOS Safari can be picky: ensure we attempt to play after attaching stream.
+      await videoRef.current.play().catch(() => {
+        // ignore; zxing may still decode once frames flow
+      });
+
+      setStatus('scanning');
+      setMessage('Point the barcode at the camera.');
+
+      pollRef.current = window.setInterval(async () => {
+        if (!readerRef.current || !videoRef.current) return;
+        try {
+          const result = await readerRef.current.decodeFromVideoElement(videoRef.current);
           const raw = result.getText();
           const cleaned = raw.replace(/\D/g, '');
 
@@ -72,33 +95,30 @@ const BarcodeScanner: React.FC<Props> = ({ onDetected }) => {
           if (cleaned.length === 13) {
             setMessage('Captured.');
             onDetected?.(cleaned);
-            stop();
+            stop('idle');
             return;
           }
 
           setMessage('Scanned, but not an ISBN-13. Try again.');
-          return;
-        }
-
-        if (error && !(error instanceof NotFoundException)) {
+        } catch (e) {
+          if (e instanceof NotFoundException) return;
           setStatus('error');
-          setMessage('Scanner error. Try stopping and starting again.');
+          setMessage(e instanceof Error ? `Scanner error: ${e.name}` : 'Scanner error');
+          stop('error');
         }
-      });
-
-      controlsRef.current = controls;
-      setStatus('scanning');
-      setMessage('Point the barcode at the camera.');
+      }, 250);
     } catch (e) {
       const name = e instanceof Error ? e.name : '';
       if (name === 'NotAllowedError' || name === 'SecurityError') {
         setStatus('denied');
         setMessage('Camera permission denied. Enable camera access and reload.');
+        stop('denied');
       } else {
         setStatus('error');
-        setMessage('Unable to start camera. Try reloading.');
+        const extra = e instanceof Error ? ` (${e.name}${e.message ? `: ${e.message}` : ''})` : '';
+        setMessage(`Unable to start camera. Try reloading.${extra}`);
+        stop('error');
       }
-      stop();
     }
   }
 
@@ -112,7 +132,7 @@ const BarcodeScanner: React.FC<Props> = ({ onDetected }) => {
               Start scan
             </button>
           ) : (
-            <button className="button buttonGhost" type="button" onClick={stop}>
+            <button className="button buttonGhost" type="button" onClick={() => stop('idle')}>
               Stop
             </button>
           )}
@@ -135,6 +155,7 @@ const BarcodeScanner: React.FC<Props> = ({ onDetected }) => {
           style={{ padding: 0, height: 240, objectFit: 'cover' }}
           muted
           playsInline
+          autoPlay
         />
       </div>
     </div>
