@@ -3,7 +3,7 @@
    - Network-first for HTML, cache fallback
 */
 
-const CACHE_NAME = 'used-book-pwa-v1';
+const CACHE_NAME = 'used-book-pwa-v2';
 
 self.addEventListener('install', (event) => {
   self.skipWaiting();
@@ -95,4 +95,3 @@ self.addEventListener('fetch', (event) => {
     })()
   );
 });
-

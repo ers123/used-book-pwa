@@ -60,7 +60,14 @@ const BarcodeScanner: React.FC<Props> = ({ onDetected }) => {
     setMessage('Requesting camera…');
 
     const hints = new Map();
-    hints.set(DecodeHintType.POSSIBLE_FORMATS, [BarcodeFormat.EAN_13]);
+    hints.set(DecodeHintType.POSSIBLE_FORMATS, [
+      BarcodeFormat.EAN_13,
+      BarcodeFormat.EAN_8,
+      BarcodeFormat.UPC_A,
+      BarcodeFormat.UPC_E,
+      BarcodeFormat.CODE_128,
+    ]);
+    hints.set(DecodeHintType.TRY_HARDER, true);
 
     const reader = new BrowserMultiFormatReader(hints, 200);
     readerRef.current = reader;
@@ -87,6 +94,7 @@ const BarcodeScanner: React.FC<Props> = ({ onDetected }) => {
           const result = await readerRef.current.decodeFromVideoElement(videoRef.current);
           const raw = result.getText();
           const cleaned = raw.replace(/\D/g, '');
+          setLastScan(cleaned || raw);
 
           const now = Date.now();
           const last = lastHitRef.current;
@@ -95,7 +103,6 @@ const BarcodeScanner: React.FC<Props> = ({ onDetected }) => {
 
           if (cleaned.length === 13) {
             setMessage('Captured.');
-            setLastScan(cleaned);
             onDetected?.(cleaned);
             stop('idle');
             return;
@@ -109,7 +116,7 @@ const BarcodeScanner: React.FC<Props> = ({ onDetected }) => {
           setStatus('scanning');
           setMessage(name ? `Scanner hiccup: ${name}. Keep scanning.` : 'Scanner hiccup. Keep scanning.');
         }
-      }, 250);
+      }, 300);
     } catch (e) {
       const name = e instanceof Error ? e.name : '';
       if (name === 'NotAllowedError' || name === 'SecurityError') {
@@ -162,12 +169,15 @@ const BarcodeScanner: React.FC<Props> = ({ onDetected }) => {
           Detected ISBN: <strong>{lastScan}</strong>
         </p>
       ) : null}
+      <p className="muted" style={{ margin: '6px 0 0' }}>
+        Tip: fill the frame, avoid glare, and hold steady for 1–2 seconds.
+      </p>
 
       <div style={{ marginTop: 10 }}>
         <video
           ref={videoRef}
           className="field"
-          style={{ padding: 0, height: 240, objectFit: 'cover' }}
+          style={{ padding: 0, height: 260, objectFit: 'cover' }}
           muted
           playsInline
           autoPlay

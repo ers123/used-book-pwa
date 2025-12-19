@@ -1,5 +1,9 @@
 import * as cheerio from 'cheerio';
 
+export const config = {
+  runtime: 'nodejs18.x',
+};
+
 type Provider = 'aladin' | 'yes24' | 'none';
 
 type ProviderQuote = {
