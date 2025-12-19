@@ -14,6 +14,7 @@ const BarcodeScanner: React.FC<Props> = ({ onDetected }) => {
 
   const [status, setStatus] = React.useState<'idle' | 'starting' | 'scanning' | 'denied' | 'error'>('idle');
   const [message, setMessage] = React.useState<string | null>(null);
+  const [lastScan, setLastScan] = React.useState<string | null>(null);
 
   function stop(nextStatus: 'idle' | 'error' | 'denied' = 'idle') {
     if (pollRef.current) {
@@ -94,6 +95,7 @@ const BarcodeScanner: React.FC<Props> = ({ onDetected }) => {
 
           if (cleaned.length === 13) {
             setMessage('Captured.');
+            setLastScan(cleaned);
             onDetected?.(cleaned);
             stop('idle');
             return;
@@ -137,15 +139,27 @@ const BarcodeScanner: React.FC<Props> = ({ onDetected }) => {
               Stop
             </button>
           )}
-          <button className="button" type="button" onClick={() => onDetected?.('9781234567890')}>
-            Demo
-          </button>
+          {import.meta.env.DEV ? (
+            <button className="button" type="button" onClick={() => onDetected?.('9781234567890')}>
+              Demo
+            </button>
+          ) : null}
         </div>
       </div>
 
       {message ? (
         <p className={status === 'error' || status === 'denied' ? 'error' : 'muted'} style={{ margin: '10px 0 0' }}>
           {message}
+        </p>
+      ) : null}
+      {status === 'scanning' && !message ? (
+        <p className="muted" style={{ margin: '10px 0 0' }}>
+          Waiting for a barcode…
+        </p>
+      ) : null}
+      {lastScan ? (
+        <p className="muted" style={{ margin: '6px 0 0' }}>
+          Detected ISBN: <strong>{lastScan}</strong>
         </p>
       ) : null}
 
