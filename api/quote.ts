@@ -129,31 +129,39 @@ async function tryUrls(urls: string[]) {
 }
 
 async function fetchYes24Quote(isbn13: string): Promise<{ title: string | null; quote: ProviderQuote }> {
-  // Best-effort: YES24 buyback pages can be JS-driven. We try multiple endpoints and fall back gracefully.
-  const urls = [
-    `https://m.yes24.com/buyback/search?query=${encodeURIComponent(isbn13)}`,
-    `https://m.yes24.com/buyback/search?keyword=${encodeURIComponent(isbn13)}`,
-    `https://m.yes24.com/buyback/search?searchKeyword=${encodeURIComponent(isbn13)}`,
-    `https://m.yes24.com/buyback/search?searchWord=${encodeURIComponent(isbn13)}`,
-  ];
+  // YES24 mobile buyback search list (HTML, no JS required)
+  const url =
+    `https://m.yes24.com/BuyBack/SearchList/?searchDomain=BOOK&searchWord=${encodeURIComponent(
+      isbn13
+    )}&searchSort=SINDEX_ONLY`;
 
-  const hit = await tryUrls(urls);
+  const hit = await tryUrls([url]);
   if (!hit) {
     return {
       title: null,
-      quote: { is_buyable: false, price: 0, error: 'YES24 lookup failed (no response)', source_url: urls[0] },
+      quote: { is_buyable: false, price: 0, error: 'YES24 lookup failed (no response)', source_url: url },
     };
   }
 
   const $ = cheerio.load(hit.html);
-  const title = extractTitle($);
-  const text = $('body').text().replace(/\s+/g, ' ');
+  const title = $('.bbG_name').first().text().replace(/\s+/g, ' ').trim() || extractTitle($);
 
-  const price = extractBestBuybackPrice(text);
-  const notBuyable = /신청\s*불가|매입\s*불가|바이백\s*불가|품절/i.test(text);
+  const priceCells = $('.bbG_price tbody tr td');
+  let price = 0;
+  if (priceCells.length >= 2) {
+    const buybackText = priceCells.eq(1).text().trim();
+    price = parseWon(buybackText);
+  } else {
+    // fallback to text scan
+    const text = $('body').text().replace(/\s+/g, ' ');
+    price = extractBestBuybackPrice(text);
+  }
+
+  const notBuyable =
+    $('.bbG_btn .btn_dim').length > 0 || /신청\s*불가|매입\s*불가|바이백\s*불가|품절/i.test(hit.html);
 
   return {
-    title,
+    title: title || null,
     quote: {
       is_buyable: price > 0 && !notBuyable,
       price: price > 0 ? price : 0,
@@ -181,10 +189,25 @@ async function fetchAladinQuote(isbn13: string): Promise<{ title: string | null;
 
   const $ = cheerio.load(hit.html);
   const title = extractTitle($);
-  const text = $('body').text().replace(/\s+/g, ' ');
 
-  const price = extractBestBuybackPrice(text);
-  const notBuyable = /매입\s*불가|매입\s*대상\s*아님|품절/i.test(text);
+  let price = 0;
+  const priceBadge = $('.c2bprice').first().text().trim();
+  if (priceBadge) {
+    price = parseWon(priceBadge);
+  }
+  if (!price) {
+    const priceRow = $('li')
+      .filter((_, el) => $(el).find('.Litem').text().includes('매입가'))
+      .first();
+    const priceText = priceRow.find('.Ritem').text().trim();
+    if (priceText) price = parseWon(priceText);
+  }
+  if (!price) {
+    const text = $('body').text().replace(/\s+/g, ' ');
+    price = extractBestBuybackPrice(text);
+  }
+
+  const notBuyable = /매입\s*불가|매입\s*대상\s*아님|품절/i.test(hit.html);
 
   return {
     title,

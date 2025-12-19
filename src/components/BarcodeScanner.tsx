@@ -175,11 +175,10 @@ const BarcodeScanner: React.FC<Props> = ({ onDetected }) => {
         Tip: fill the frame, avoid glare, and hold steady for 1–2 seconds.
       </p>
 
-      <div style={{ marginTop: 10 }}>
+      <div className="scannerFrame" style={{ marginTop: 10 }}>
         <video
           ref={videoRef}
-          className="field"
-          style={{ padding: 0, height: 260, objectFit: 'cover' }}
+          className="scannerVideo"
           muted
           playsInline
           autoPlay
