@@ -1,8 +1,4 @@
-import * as cheerio from 'cheerio';
-
-export const config = {
-  runtime: 'nodejs18.x',
-};
+const cheerio = require('cheerio');
 
 type Provider = 'aladin' | 'yes24' | 'none';
 
@@ -219,7 +215,7 @@ function json(res: any, status: number, body: any, headers: Record<string, strin
   res.end(JSON.stringify(body));
 }
 
-export default async function handler(req: any, res: any) {
+async function handler(req: any, res: any) {
   try {
     const clientId = getClientId(req);
     const now = Date.now();
@@ -273,3 +269,9 @@ export default async function handler(req: any, res: any) {
     return json(res, 500, { error: 'lookup failed (server error)' }, { 'cache-control': 'no-store' });
   }
 }
+
+handler.config = {
+  runtime: 'nodejs18.x',
+};
+
+module.exports = handler;

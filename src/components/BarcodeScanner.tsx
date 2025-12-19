@@ -11,6 +11,7 @@ const BarcodeScanner: React.FC<Props> = ({ onDetected }) => {
   const streamRef = React.useRef<MediaStream | null>(null);
   const pollRef = React.useRef<number | null>(null);
   const lastHitRef = React.useRef<{ value: string; at: number } | null>(null);
+  const cooldownRef = React.useRef<number>(0);
 
   const [status, setStatus] = React.useState<'idle' | 'starting' | 'scanning' | 'denied' | 'error'>('idle');
   const [message, setMessage] = React.useState<string | null>(null);
@@ -90,6 +91,7 @@ const BarcodeScanner: React.FC<Props> = ({ onDetected }) => {
 
       pollRef.current = window.setInterval(async () => {
         if (!readerRef.current || !videoRef.current) return;
+        if (Date.now() < cooldownRef.current) return;
         try {
           const result = await readerRef.current.decodeFromVideoElement(videoRef.current);
           const raw = result.getText();
@@ -104,7 +106,7 @@ const BarcodeScanner: React.FC<Props> = ({ onDetected }) => {
           if (cleaned.length === 13) {
             setMessage('Captured.');
             onDetected?.(cleaned);
-            stop('idle');
+            cooldownRef.current = Date.now() + 2000;
             return;
           }
 
