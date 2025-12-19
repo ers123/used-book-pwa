@@ -102,9 +102,10 @@ const BarcodeScanner: React.FC<Props> = ({ onDetected }) => {
           setMessage('Scanned, but not an ISBN-13. Try again.');
         } catch (e) {
           if (e instanceof NotFoundException) return;
-          setStatus('error');
-          setMessage(e instanceof Error ? `Scanner error: ${e.name}` : 'Scanner error');
-          stop('error');
+          const name = e instanceof Error ? e.name : '';
+          // Non-fatal: keep scanning and show message.
+          setStatus('scanning');
+          setMessage(name ? `Scanner hiccup: ${name}. Keep scanning.` : 'Scanner hiccup. Keep scanning.');
         }
       }, 250);
     } catch (e) {

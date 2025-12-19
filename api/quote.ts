@@ -1,4 +1,4 @@
-import cheerio from 'cheerio';
+import * as cheerio from 'cheerio';
 
 type Provider = 'aladin' | 'yes24' | 'none';
 
@@ -216,51 +216,56 @@ function json(res: any, status: number, body: any, headers: Record<string, strin
 }
 
 export default async function handler(req: any, res: any) {
-  const clientId = getClientId(req);
-  const now = Date.now();
-  const rl = rate.get(clientId) ?? { windowStart: now, count: 0 };
-  if (now - rl.windowStart > RATE_WINDOW_MS) {
-    rl.windowStart = now;
-    rl.count = 0;
+  try {
+    const clientId = getClientId(req);
+    const now = Date.now();
+    const rl = rate.get(clientId) ?? { windowStart: now, count: 0 };
+    if (now - rl.windowStart > RATE_WINDOW_MS) {
+      rl.windowStart = now;
+      rl.count = 0;
+    }
+    rl.count += 1;
+    rate.set(clientId, rl);
+    if (rl.count > RATE_MAX) {
+      return json(res, 429, { error: 'Too many requests. Slow down.' }, { 'cache-control': 'no-store' });
+    }
+
+    const isbnParam = (req.query?.isbn ?? req.query?.ISBN ?? req.query?.q ?? req.query?.query) as string | undefined;
+    if (!isbnParam) {
+      return json(res, 400, { error: 'isbn is required' }, { 'cache-control': 'no-store' });
+    }
+
+    const isbn13 = normalizeIsbnTo13(isbnParam);
+    if (!isbn13) {
+      return json(res, 400, { error: 'invalid isbn (provide ISBN-10 or ISBN-13)' }, { 'cache-control': 'no-store' });
+    }
+
+    const cached = quoteCache.get(isbn13);
+    if (cached && cached.expiresAt > now) {
+      return json(
+        res,
+        200,
+        cached.data,
+        { 'cache-control': 's-maxage=86400, stale-while-revalidate=604800' }
+      );
+    }
+
+    const [aladin, yes24] = await Promise.all([fetchAladinQuote(isbn13), fetchYes24Quote(isbn13)]);
+    const title = aladin.title || yes24.title || 'Title unavailable';
+
+    const data: BookQuote = {
+      isbn: isbn13,
+      title,
+      aladin: aladin.quote,
+      yes24: yes24.quote,
+      recommendation: recommend(aladin.quote, yes24.quote),
+    };
+
+    quoteCache.set(isbn13, { expiresAt: now + QUOTE_TTL_MS, data });
+
+    return json(res, 200, data, { 'cache-control': 's-maxage=86400, stale-while-revalidate=604800' });
+  } catch (err) {
+    console.error('quote handler error', err);
+    return json(res, 500, { error: 'lookup failed (server error)' }, { 'cache-control': 'no-store' });
   }
-  rl.count += 1;
-  rate.set(clientId, rl);
-  if (rl.count > RATE_MAX) {
-    return json(res, 429, { error: 'Too many requests. Slow down.' }, { 'cache-control': 'no-store' });
-  }
-
-  const isbnParam = (req.query?.isbn ?? req.query?.ISBN ?? req.query?.q ?? req.query?.query) as string | undefined;
-  if (!isbnParam) {
-    return json(res, 400, { error: 'isbn is required' }, { 'cache-control': 'no-store' });
-  }
-
-  const isbn13 = normalizeIsbnTo13(isbnParam);
-  if (!isbn13) {
-    return json(res, 400, { error: 'invalid isbn (provide ISBN-10 or ISBN-13)' }, { 'cache-control': 'no-store' });
-  }
-
-  const cached = quoteCache.get(isbn13);
-  if (cached && cached.expiresAt > now) {
-    return json(
-      res,
-      200,
-      cached.data,
-      { 'cache-control': 's-maxage=86400, stale-while-revalidate=604800' }
-    );
-  }
-
-  const [aladin, yes24] = await Promise.all([fetchAladinQuote(isbn13), fetchYes24Quote(isbn13)]);
-  const title = aladin.title || yes24.title || 'Title unavailable';
-
-  const data: BookQuote = {
-    isbn: isbn13,
-    title,
-    aladin: aladin.quote,
-    yes24: yes24.quote,
-    recommendation: recommend(aladin.quote, yes24.quote),
-  };
-
-  quoteCache.set(isbn13, { expiresAt: now + QUOTE_TTL_MS, data });
-
-  return json(res, 200, data, { 'cache-control': 's-maxage=86400, stale-while-revalidate=604800' });
 }
